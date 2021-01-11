@@ -1,0 +1,76 @@
+{
+  "name": "pixi.js",
+  "version": "6.0.0-rc",
+  "description": "PixiJS without the CanvasRenderer fallback, modern browsers only",
+  "author": "Mat Groves",
+  "contributors": [
+    "Ivan Popelyshev <ivan.popelyshev@gmail.com>",
+    "Matt Karl <matt@mattkarl.com>",
+    "Chad Engler <chad@pantherdev.com>",
+    "Richard Davey <rdavey@gmail.com>"
+  ],
+  "standalone": true,
+  "main": "dist/cjs/pixi.js",
+  "module": "dist/esm/pixi.js",
+  "bundle": "dist/browser/pixi.js",
+  "bundleModule": "dist/browser/pixi.mjs",
+  "bundleOutput": {
+    "name": "PIXI"
+  },
+  "homepage": "http://www.pixijs.com/",
+  "bugs": "https://github.com/pixijs/pixi.js/issues",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pixijs/pixi.js.git"
+  },
+  "scripts": {
+    "test": "floss --path test"
+  },
+  "files": [
+    "lib/",
+    "dist/",
+    "*.d.ts"
+  ],
+  "funding": {
+    "type": "opencollective",
+    "url": "https://opencollective.com/pixijs"
+  },
+  "dependencies": {
+    "@pixi/accessibility": "6.0.0-rc",
+    "@pixi/app": "6.0.0-rc",
+    "@pixi/compressed-textures": "6.0.0-rc",
+    "@pixi/constants": "6.0.0-rc",
+    "@pixi/core": "6.0.0-rc",
+    "@pixi/display": "6.0.0-rc",
+    "@pixi/extract": "6.0.0-rc",
+    "@pixi/filter-alpha": "6.0.0-rc",
+    "@pixi/filter-blur": "6.0.0-rc",
+    "@pixi/filter-color-matrix": "6.0.0-rc",
+    "@pixi/filter-displacement": "6.0.0-rc",
+    "@pixi/filter-fxaa": "6.0.0-rc",
+    "@pixi/filter-noise": "6.0.0-rc",
+    "@pixi/graphics": "6.0.0-rc",
+    "@pixi/interaction": "6.0.0-rc",
+    "@pixi/loaders": "6.0.0-rc",
+    "@pixi/math": "6.0.0-rc",
+    "@pixi/mesh": "6.0.0-rc",
+    "@pixi/mesh-extras": "6.0.0-rc",
+    "@pixi/mixin-cache-as-bitmap": "6.0.0-rc",
+    "@pixi/mixin-get-child-by-name": "6.0.0-rc",
+    "@pixi/mixin-get-global-position": "6.0.0-rc",
+    "@pixi/particles": "6.0.0-rc",
+    "@pixi/polyfill": "6.0.0-rc",
+    "@pixi/prepare": "6.0.0-rc",
+    "@pixi/runner": "6.0.0-rc",
+    "@pixi/settings": "6.0.0-rc",
+    "@pixi/sprite": "6.0.0-rc",
+    "@pixi/sprite-animated": "6.0.0-rc",
+    "@pixi/sprite-tiling": "6.0.0-rc",
+    "@pixi/spritesheet": "6.0.0-rc",
+    "@pixi/text": "6.0.0-rc",
+    "@pixi/text-bitmap": "6.0.0-rc",
+    "@pixi/ticker": "6.0.0-rc",
+    "@pixi/utils": "6.0.0-rc"
+  }
+}

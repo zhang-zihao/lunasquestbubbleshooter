@@ -1,0 +1,40 @@
+{
+  "name": "@pixi/text-bitmap",
+  "version": "6.0.0-rc",
+  "main": "dist/cjs/text-bitmap.js",
+  "module": "dist/esm/text-bitmap.js",
+  "bundle": "dist/browser/text-bitmap.js",
+  "description": "Text via bitmap fonts",
+  "author": "Mat Groves",
+  "contributors": [
+    "Matt Karl <matt@mattkarl.com>"
+  ],
+  "homepage": "http://pixijs.com/",
+  "bugs": "https://github.com/pixijs/pixi.js/issues",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pixijs/pixi.js.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "lib",
+    "dist",
+    "*.d.ts"
+  ],
+  "dependencies": {
+    "@pixi/core": "6.0.0-rc",
+    "@pixi/display": "6.0.0-rc",
+    "@pixi/loaders": "6.0.0-rc",
+    "@pixi/math": "6.0.0-rc",
+    "@pixi/mesh": "6.0.0-rc",
+    "@pixi/settings": "6.0.0-rc",
+    "@pixi/text": "6.0.0-rc",
+    "@pixi/utils": "6.0.0-rc"
+  },
+  "devDependencies": {
+    "@pixi/spritesheet": "6.0.0-rc"
+  }
+}

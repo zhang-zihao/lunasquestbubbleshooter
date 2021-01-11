@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="js/pixi.min.js"></script>
+    <script>
+        let app;
+        let player;
+        let keys = {};
+        let keysDiv;
+        let bullets = [];
+        let bulletSpeed = 10;
+        let enemy;
+        //background sprites
+        let luna_sky;
+        let luna_ground;
+        let luna_front;
+        let luna_original_pos_x;
+        let luna_original_pos_y;
+        //gameplay assets
+        //line
+        var line = new PIXI.Graphics();
+        var line_b = new PIXI.Graphics();//bounced
+        var line_c = new PIXI.Graphics();//bounced #2
+        //background
+        let gameplay_back;
+        //borders
+        let border_l;
+        let border_r;
+        //balls
+        let balls = [];
+        let ballIndicator;
+        //glows
+        let ballglows = [];
+        //rollers
+        let roller_orange;
+        let roller_purple;
+        //explosion
+        let explosion;
+        //jumpscreen
+        let jumpscreen_back;
+        let jumpscreen_button;
+        //playbutton
+        let button_play;
+        let button_play_orgpos_x;
+        let button_play_orgpos_y;
+        //jumpbutton
+        let button_jump;
+        let button_jump_orgpos_x;
+        let button_jump_orgpos_y;
+        //firing mechanics
+        let fireok = false;
+        let firetype = 0;
+        let bullet;
+
+
+        window.onload = function(){
+            app = new PIXI.Application(
+                {
+                   width: 1390,
+                   height: 795,
+                   backgroundColor: 0xAAAAAA
+                   
+                }
+            );
+
+            //document.body.appendChild(app.view);
+            document.querySelector("#gameDiv").appendChild(app.view);
+            app.stage.interactive = true;
+            document.querySelector("#gameDiv").addEventListener("pointerdown",fireBullet);
+
+            //preload assets
+            app.loader.baseUrl = "images";
+            app.loader
+                .add("luna_sky", "luna_sky.png")
+                .add("luna_ground", "luna_ground.png")
+                .add("luna_front", "luna_front.png")
+                .add("border_l","border_l.png")
+                .add("border_r","border_r.png")
+                .add("ball_orange","ball_orange.png")
+                .add("ball_purple", "ball_purple.png")
+                .add("ball_green","ball_green.png")
+                .add("ball_indicator","ball_glow.png")
+                .add("gameplay_back","gameplay_back.png")
+                .add("roller_orange","roller_orange.png")
+                .add("roller_purple","roller_purple.png")
+                .add("play","play.png")
+                .add("explosion","explosion.png")
+                .add("player", "player.png")
+                .add("bullet", "bullet.png");
+
+            app.loader.onProgress.add(showProgress);
+            app.loader.onComplete.add(doneLoading);
+            app.loader.onError.add(reportError);
+
+            app.loader.load();
+
+
+
+            
+
+            // keyboard event handlers
+            window.addEventListener("keydown", keysDown);
+            window.addEventListener("keyup", keysUp);
+
+            app.ticker.add(gameLoop);
+
+            keysDiv = document.querySelector("#keys");
+
+
+            //mouse interaction
+            app.stage.interactive = true;
+            app.stage.on("pointermove", movePlayer);
+            app.stage.on("pointermove", movebackgrounds);
+            //app.stage.on("pointermove", drawLine);
+
+            
+
+        }
+        // window.onresize = function()
+        // {
+        //     //window.addEventListener('resize',()=>{
+        //         app.stage.width = window.innerWidth;
+        //         app.stage.height = window.innerHeight;
+        //     //})
+        // }
+
+        function keysDown(e) {
+            console.log(e.keyCode);
+            keys[e.keyCode] = true;
+        }
+
+        function keysUp(e) {
+            console.log(e.keyCode);
+            keys[e.keyCode] = false;
+        }
+
+        function gameLoop(delta){
+            keysDiv.innerHTML = JSON.stringify(keys);
+
+            //W
+            if(keys["87"]){
+                player.y -= 5;
+            }
+
+            //A
+            if(keys["65"]){
+                player.x -= 5;
+            }
+
+            //S
+            if(keys["83"]){
+                player.y += 5;
+            }
+
+            //D
+            if(keys["68"]){
+                player.x += 5;
+            }
+
+            //bullets
+            updateBullets(delta);
+
+            // if(rectsIntersect(player,enemy))
+            // {
+            //     console.log("Collision");
+            // }
+
+        }
+
+        //mouse interaction functions
+        function movePlayer(e)
+        {
+            let pos = e.data.global;
+
+            player.x = pos.x;
+            player.y = pos.y;
+        }
+        function movebackgrounds(e)
+        {
+            let pos_background = e.data.global;
+            luna_sky.x = luna_original_pos_x - (pos_background.x / 15);
+            luna_sky.y = luna_original_pos_y - (pos_background.y / 15);
+            luna_ground.x = luna_original_pos_x - (pos_background.x / 20);
+            luna_ground.y = luna_original_pos_y - (pos_background.y / 20);
+            luna_front.x = luna_original_pos_x - (pos_background.x / 25);
+            luna_front.y = luna_original_pos_y - (pos_background.y / 25);
+        }
+
+        //loader
+        function showProgress(e)
+        {
+            console.log(e.progress);
+        }
+
+        function reportError(e)
+        {
+            console.error("ERROR: " + e.message);
+        }
+
+        function doneLoading(e)
+        {
+            console.log("DONE LOADING!");
+            InitializePlayer();
+            InitializeEnemy();
+            InitializeBackgrounds();
+            InitializePlayButton();
+            //InitializeLine();
+            //InitializeBalls();
+        }
+
+        //game functions
+          //player
+        function InitializePlayer()
+        {
+            //player object
+            //player = new PIXI.Sprite.from("images/player.png");
+            player = new PIXI.Sprite.from(app.loader.resources.player.texture);
+            player.anchor.set(0.5);
+            player.x = 16;// app.view.width / 2;
+            player.y = app.view.height / 2;
+
+            app.stage.addChild(player);
+        }
+          //enemy
+          function InitializeEnemy()
+        {
+            //player object
+            //player = new PIXI.Sprite.from("images/player.png");
+            enemy = new PIXI.Sprite.from(app.loader.resources.player.texture);
+            enemy.anchor.set(0.5);
+            enemy.x = app.view.width -16;/// 2;
+            enemy.y = app.view.height / 2;
+
+            app.stage.addChild(enemy);
+        }
+        function InitializeBackgrounds()
+        {
+            luna_sky = new PIXI.Sprite.from(app.loader.resources.luna_sky.texture);
+            luna_sky.anchor.set(1.0);
+            luna_sky.x = app.view.width+25;
+            luna_sky.y = app.view.height+25;
+            luna_sky.width = app.view.width+30;
+            luna_sky.height = app.view.height+30;
+            app.stage.addChild(luna_sky);
+            luna_ground = new PIXI.Sprite.from(app.loader.resources.luna_ground.texture);
+            luna_ground.anchor.set(1.0);
+            luna_ground.x = app.view.width+25;
+            luna_ground.y = app.view.height+25;
+            luna_ground.width = app.view.width+10;
+            luna_ground.height = app.view.height+10;
+            app.stage.addChild(luna_ground);
+            luna_front = new PIXI.Sprite.from(app.loader.resources.luna_front.texture);
+            luna_front.anchor.set(1.0);
+            luna_front.x = app.view.width+25;
+            luna_front.y = app.view.height+25;
+            luna_front.width = app.view.width+10;
+            luna_front.height = app.view.height+10;
+            app.stage.addChild(luna_front);
+
+            //preset background pos
+            luna_original_pos_x = luna_front.x;
+            luna_original_pos_y = luna_front.y;
+
+            //app.view.width =1366;
+            //app.view.height = 768;
+
+        }
+        function InitializePlayButton()
+        {
+            button_play = new PIXI.Sprite.from(app.loader.resources.play.texture);
+            button_play.anchor.set(0.5);
+            button_play.x = app.view.width/2;
+            button_play.y = app.view.height/4*3-100;
+            button_play.width = 400;
+            button_play.height = 150;
+            button_play.interactive = true;
+            button_play.buttonMode = true;
+            button_play.on("pointerup",PlayButton_PointerUp);
+            button_play.on("pointerover", PlayButton_PointerOver);
+            button_play.on("pointerout", PlayButton_PointerOut);
+            app.stage.addChild(button_play);
+            button_play_orgpos_x = button_play.x;
+            button_play_orgpos_y = button_play.y;
+        }
+        function PlayButton_PointerOver()
+        {
+            button_play.x = button_play_orgpos_x+5;
+            button_play.y = button_play_orgpos_y +15;
+            button_play.tint = 0x4DF99C;
+        }
+        function PlayButton_PointerOut()
+        {
+            button_play.x = button_play_orgpos_x;
+            button_play.y = button_play_orgpos_y;
+            button_play.tint = 0xFFFFFF;
+        }
+        function PlayButton_PointerUp()
+        {
+            InitializeLine();
+            InitializeBalls();
+            app.stage.on("pointermove", drawLine);
+            app.stage.removeChild(button_play);
+        }
+        function InitializeJumpButton()
+        {
+            button_jump = new PIXI.Sprite.from(app.loader.resources.play.texture);
+            button_jump.anchor.set(0.5);
+            button_jump.x = app.view.width/2;
+            button_jump.y = app.view.height/4*3-100;
+            button_jump.width = 400;
+            button_jump.height = 150;
+            button_jump.interactive = true;
+            button_jump.buttonMode = true;
+            button_jump.on("pointerup",JumpButton_PointerUp);
+            button_jump.on("pointerover", JumpButton_PointerOver);
+            button_jump.on("pointerout", JumpButton_PointerOut);
+            app.stage.addChild(button_jump);
+            button_jump_orgpos_x = button_jump.x;
+            button_jump_orgpos_y = button_jump.y;
+        }
+        function JumpButton_PointerOver()
+        {
+            button_play.x = button_play_orgpos_x+5;
+            button_play.y = button_play_orgpos_y +15;
+            button_play.tint = 0x4DF99C;
+        }
+        function JumpButton_PointerOut()
+        {
+            button_play.x = button_play_orgpos_x;
+            button_play.y = button_play_orgpos_y;
+            button_play.tint = 0xFFFFFF;
+        }
+        function JumpButton_PointerUp()
+        {
+            //InitializeLine();
+            //InitializeBalls();
+            //app.stage.on("pointermove", drawLine);
+            //app.stage.removeChild(button_play);
+            window.open("https://play.google.com/store/apps/details?id=com.huuuge.puzzle.popstory&hl=en&gl=US");
+        }
+        function InitializeLine()
+        {
+            //background
+            gameplay_back = new PIXI.Sprite.from(app.loader.resources.gameplay_back.texture);
+            gameplay_back.anchor .set(0.5);
+            gameplay_back.x = app.view.width/2;
+            gameplay_back.y = app.view.height/2+50;
+            gameplay_back.width = app.view.width*0.3;
+            gameplay_back.height = app.view.height+100;
+            app.stage.addChild(gameplay_back);
+            //roller
+            roller_orange = new PIXI.Sprite.from(app.loader.resources.roller_orange.texture);
+            roller_orange.anchor .set(0.5);
+            roller_orange.x = app.view.width/2;
+            roller_orange.y = app.view.height/2+240;
+            roller_orange.width = 100;
+            roller_orange.height = 112;
+            roller_orange.Sprite = new PIXI.Sprite.from(app.loader.resources.roller_purple.texture);
+            app.stage.addChild(roller_orange);
+
+            //add borders
+            border_l = new PIXI.Sprite.from(app.loader.resources.border_l.texture);
+            border_l.anchor.set(0);
+            border_l.x = app.view.width*0.35;
+            border_l.y = 0;
+            border_l.width = 10;
+            border_l.height = app.view.height;
+            app.stage.addChild(border_l);
+            border_r = new PIXI.Sprite.from(app.loader.resources.border_r.texture);
+            border_r.anchor.set(0);
+            border_r.x = app.view.width*0.65;
+            border_r.y = 0;
+            border_r.width = 10;
+            border_r.height = app.view.height;
+            app.stage.addChild(border_r);
+
+
+        }
+        function InitializeBalls()
+        {
+            //alter pos value when instantiating a new ball. 46 is radius.
+            let alter_horizontal = 46/2;
+            let alter_vertical = Math.sqrt(3)/2*46;
+            //orange balls
+            let b_0_0 = createBall(app.view.width/2,app.view.height/2+30,0);
+            let b_1_0 = createBall(b_0_0.x - alter_horizontal,b_0_0.y-alter_vertical,0);
+            let b_1_1 = createBall(b_0_0.x + alter_horizontal,b_0_0.y-alter_vertical,0);
+            let b_2_0 = createBall(b_1_0.x - alter_horizontal,b_1_0.y-alter_vertical,0);
+            let b_2_1 = createBall(b_1_1.x - alter_horizontal,b_1_1.y-alter_vertical,0);
+            let b_2_2 = createBall(b_1_1.x + alter_horizontal,b_1_1.y-alter_vertical,0);
+            let b_3_0 = createBall(b_2_0.x - alter_horizontal,b_2_0.y-alter_vertical,0);
+            let b_3_1 = createBall(b_2_1.x - alter_horizontal,b_2_1.y-alter_vertical,0);
+            let b_3_2 = createBall(b_2_2.x - alter_horizontal,b_2_2.y-alter_vertical,0);
+            let b_3_3 = createBall(b_2_2.x + alter_horizontal,b_2_2.y-alter_vertical,0);
+            let b_4_0 = createBall(b_3_0.x - alter_horizontal,b_3_0.y-alter_vertical,0);
+            let b_4_1 = createBall(b_3_1.x - alter_horizontal,b_3_1.y-alter_vertical,0);
+            let b_4_2 = createBall(b_3_2.x - alter_horizontal,b_3_2.y-alter_vertical,0);
+            let b_4_3 = createBall(b_3_3.x - alter_horizontal,b_3_3.y-alter_vertical,0);
+            let b_4_4 = createBall(b_3_3.x + alter_horizontal,b_3_3.y-alter_vertical,0);
+            //purple balls
+            let b_5_0 = createBall(b_4_0.x + alter_horizontal,b_4_0.y-alter_vertical,1);
+            let b_5_1 = createBall(b_4_1.x + alter_horizontal,b_4_1.y-alter_vertical,1);
+            let b_5_2 = createBall(b_4_2.x + alter_horizontal,b_4_2.y-alter_vertical,1);
+            let b_5_3 = createBall(b_4_3.x + alter_horizontal,b_4_3.y-alter_vertical,1);
+            let b_6_0 = createBall(b_5_0.x + alter_horizontal,b_5_0.y-alter_vertical,1);
+            let b_6_1 = createBall(b_5_1.x + alter_horizontal,b_5_1.y-alter_vertical,1);
+            let b_6_2 = createBall(b_5_2.x + alter_horizontal,b_5_2.y-alter_vertical,1);
+            let b_7_0 = createBall(b_6_0.x - alter_horizontal,b_6_0.y-alter_vertical,1);
+            let b_7_1 = createBall(b_6_0.x + alter_horizontal,b_6_0.y-alter_vertical,1);
+            let b_7_2 = createBall(b_6_1.x + alter_horizontal,b_6_1.y-alter_vertical,1);
+            let b_7_3 = createBall(b_6_2.x + alter_horizontal,b_6_2.y-alter_vertical,1);
+            // let b_8_0 = createBall(b_7_0.x - alter_horizontal,b_7_0.y-alter_vertical,1);
+            // let b_8_1 = createBall(b_7_0.x + alter_horizontal,b_7_0.y-alter_vertical,1);
+            // let b_8_2 = createBall(b_7_1.x + alter_horizontal,b_7_1.y-alter_vertical,1);
+            // let b_8_3 = createBall(b_7_2.x + alter_horizontal,b_7_2.y-alter_vertical,1);
+            // let b_8_4 = createBall(b_7_3.x + alter_horizontal,b_7_3.y-alter_vertical,1);
+            //green balls
+            // let b_9_0 = createBall(b_8_0.x - alter_horizontal,b_8_0.y-alter_vertical,2);
+            // let b_9_1 = createBall(b_8_0.x + alter_horizontal,b_8_0.y-alter_vertical,2);
+            // let b_9_2 = createBall(b_8_1.x + alter_horizontal,b_8_1.y-alter_vertical,2);
+            // let b_9_3 = createBall(b_8_2.x + alter_horizontal,b_8_2.y-alter_vertical,2);
+            // let b_9_4 = createBall(b_8_3.x + alter_horizontal,b_8_3.y-alter_vertical,2);
+            // let b_9_5 = createBall(b_8_4.x + alter_horizontal,b_8_4.y-alter_vertical,2);
+            // let b_10_0 = createBall(b_9_0.x - alter_horizontal,b_9_0.y-alter_vertical,2);
+            // let b_10_1 = createBall(b_9_0.x + alter_horizontal,b_9_0.y-alter_vertical,2);
+            // let b_10_2 = createBall(b_9_1.x + alter_horizontal,b_9_1.y-alter_vertical,2);
+            // let b_10_3 = createBall(b_9_2.x + alter_horizontal,b_9_2.y-alter_vertical,2);
+            // let b_10_4 = createBall(b_9_3.x + alter_horizontal,b_9_3.y-alter_vertical,2);
+            // let b_10_5 = createBall(b_9_4.x + alter_horizontal,b_9_4.y-alter_vertical,2);
+            // let b_10_6 = createBall(b_9_5.x + alter_horizontal,b_9_5.y-alter_vertical,2);
+        }
+        // function InitializeBallIndicator()
+        // {
+
+        // }
+          //mechanics
+        // function rectsIntersect(a,b)
+        // {
+        //     let aBox = a.getBounds();
+        //     let bBox = b.getBounds();
+
+        //     return aBox.x + aBox.width > bBox.x &&
+        //            aBox.x < bBox.x + bBox.width &&
+        //            aBox.y + aBox.height > bBox.y &&
+        //            aBox.y < bBox.y +bBox.height;
+        // }
+    //draw line
+        function drawLine(e)
+        {
+            ClearGlows();
+            fireok = false;
+            //console.log("DRAWING LINE");
+            let cursor_pos = e.data.global;
+            app.stage.addChild(line);
+            line.clear();
+            line.lineStyle(2, 0xffd700);
+            let startpoint_x = app.view.width/2;
+            let startpoint_y = app.view.height/5*4;
+            line.moveTo(startpoint_x, startpoint_y);
+            //only display line when cursor is in gameplay area
+            //if(cursor_pos.x<=border_r.x&&cursor_pos.x>=border_l.x)
+            //{
+
+            
+            //only display line when the line points UP(cursor above launcher)
+            if(cursor_pos.y< startpoint_y){
+
+                let intersectpoint_x;
+                let intersectpoint_y;
+                let y_x_ratio;
+
+                //caculate x for interception point
+                //line points to right
+                if(cursor_pos.x>startpoint_x)
+                {
+                    intersectpoint_x = border_r.x;
+                }
+                else //line points to left
+                {
+                    intersectpoint_x = border_l.x;
+                }
+
+                //caculate y height for interception point
+                //zero check
+                if(cursor_pos.x!= startpoint_x)
+                {
+                    //.log(cursor_pos.y- startpoint_y);
+                    //console.log(cursor_pos.x - startpoint_x);
+                    y_x_ratio = (cursor_pos.y- startpoint_y)/(cursor_pos.x - startpoint_x);
+                }
+                //make ratio >0
+                if(y_x_ratio<0){y_x_ratio*=(-1);}
+
+                intersectpoint_y = startpoint_y - ((border_r.x - startpoint_x) * y_x_ratio);
+
+
+
+
+                //detect balls
+                //intersect points with ball
+                let final_line_endpoint={};
+                final_line_endpoint.x = -1;
+                final_line_endpoint.y = -1;
+
+                for(let i=0;i<balls.length;i++)
+                {
+                    let ball_x = balls[i].position.x;
+                    let ball_y = balls[i].position.y;
+                    let _div_upper = ((intersectpoint_x - startpoint_x)*(startpoint_y - ball_y) - (startpoint_x - ball_x)*(intersectpoint_y - startpoint_y));
+                    let _div_lower = ((intersectpoint_x - startpoint_x)*(intersectpoint_x - startpoint_x)) + ((intersectpoint_y - startpoint_y)*(intersectpoint_y-startpoint_y));
+                    let distance = _div_upper*_div_upper / _div_lower;
+
+                    //console.log(distance);
+                    //if line collides with ball
+                    if(distance<2116)
+                    {
+                        // //get collision point
+                        // let _k_div_upper = ((ball_x - startpoint_x)*(intersectpoint_x - startpoint_x))+((ball_y - startpoint_y)*(intersectpoint_y - startpoint_y));
+                        // let _k_div_lower = ((intersectpoint_x - startpoint_x)* (intersectpoint_x - startpoint_x))+((intersectpoint_y - startpoint_y)* (intersectpoint_y - startpoint_y));
+                        // let _k = _k_div_upper / _k_div_lower;
+                        //     //actual collision point -- x
+                        //     let collision_x = (intersectpoint_x - startpoint_x)*_k + startpoint_x;
+                        //     //actual collision point -- y
+                        //     let collision_y = (intersectpoint_y - startpoint_y)*_k + startpoint_y;
+
+                        //get collision point
+                        let _l0_r1;
+                        if(cursor_pos.x>startpoint_x)
+                        {
+                            _l0_r1 =1;
+                        }
+                        else //line points to left
+                        {
+                            _l0_r1 =0;
+                        }
+                        let circle_intercept_point = getPoint(ball_x,ball_y,46,startpoint_x,startpoint_y,intersectpoint_x,intersectpoint_y,_l0_r1);
+                        if(circle_intercept_point.y>final_line_endpoint.y)
+                        {
+                            final_line_endpoint = circle_intercept_point;
+                        }
+                        
+                    }
+                }
+
+                //if original line did reach a ball
+                if(final_line_endpoint.y>0)
+                {
+                    line.lineTo(final_line_endpoint.x,final_line_endpoint.y);
+                    updateBallIndicator(final_line_endpoint.x,final_line_endpoint.y,false);
+
+                    if(line_b != null)
+                    {
+                        app.stage.removeChild(line_b);
+                    }
+
+                    //display glows
+                    checkBallGlows(final_line_endpoint);
+
+                    //activate firing trigger
+                    fireok = true;
+                    
+
+                }
+                //if original line did not reach any ball, then bounce line against wall
+                else
+                {
+                    line.lineTo(intersectpoint_x,intersectpoint_y);
+                    updateBallIndicator(final_line_endpoint.x,final_line_endpoint.y,true);
+
+
+                    //second line
+                    app.stage.addChild(line_b);
+                    line_b.clear();
+                    line_b.lineStyle(2, 0xffed8a);
+                    line_b.moveTo(intersectpoint_x, intersectpoint_y);
+
+                    //bounce the second line
+                    let line_b_wall_x;
+                    let line_b_wall_y;
+                    if(intersectpoint_x>app.view.width/2)
+                    {
+                        line_b_wall_x = border_l.x;
+                    }
+                    else
+                    {
+                        line_b_wall_x = border_r.x;
+                    }
+                    line_b_wall_y = intersectpoint_y - (startpoint_y - intersectpoint_y);
+                    
+
+                    
+                    let endpoint_b = GetballCollisionPoint(line_b_wall_x,line_b_wall_y,intersectpoint_x,intersectpoint_y,cursor_pos);
+                    //if line b did reach a ball
+                    if(endpoint_b.y>0)
+                    {
+                        line_b.lineTo(endpoint_b.x,endpoint_b.y);
+                        updateBallIndicator(endpoint_b.x,endpoint_b.y,false);
+  
+                        if(line_c != null)
+                        {
+                            app.stage.removeChild(line_c);
+                        }
+
+                        //display glows
+                        checkBallGlows(endpoint_b);
+
+                        //activate firing trigger
+                        fireok = true;
+                    }
+                    //if line b did not reach any ball, then bounce line against wall
+                    else
+                    {
+                        line_b.lineTo(line_b_wall_x,line_b_wall_y);
+                        updateBallIndicator(line_b_wall_x,line_b_wall_y,true);
+
+
+
+
+                        //third line
+                        app.stage.addChild(line_c);
+                        line_c.clear();
+                        line_c.lineStyle(2, 0xfffdd0);
+                        line_c.moveTo(line_b_wall_x, line_b_wall_y);
+
+                        //bounce the second line
+                        let line_c_wall_x;
+                        let line_c_wall_y;
+                        if(line_b_wall_x>app.view.width/2)
+                        {
+                            line_c_wall_x = border_l.x;
+                        }
+                        else
+                        {
+                            line_c_wall_x = border_r.x;
+                        }
+                        line_c_wall_y = line_b_wall_y - (intersectpoint_y - line_b_wall_y);
+                        
+
+                        
+                        let endpoint_c = GetballCollisionPoint(line_c_wall_x,line_c_wall_y,line_b_wall_x,line_b_wall_y,cursor_pos);
+                        //if line c did reach a ball
+                        if(endpoint_c.y>0)
+                        {
+                            line_c.lineTo(endpoint_c.x,endpoint_c.y);
+                            updateBallIndicator(endpoint_c.x,endpoint_c.y,false);
+    
+                            //display glows
+                            checkBallGlows(endpoint_c);
+
+                            //activate firing trigger
+                            fireok = true;
+                        }
+                        //if line c did not reach any ball, then bounce line against wall
+                        else
+                        {
+                            line_c.lineTo(line_c_wall_x,line_c_wall_y);
+                            updateBallIndicator(line_c_wall_x,line_c_wall_y,true);
+                            app.stage.removeChild(line);
+                            app.stage.removeChild(line_b);
+                            app.stage.removeChild(line_c);
+                            
+                        }
+
+                    }
+
+
+
+                }
+
+
+
+                
+                
+            }
+            
+            //}
+            if(cursor_pos.x>=border_r.x||cursor_pos.x<=border_l.x)
+            {
+                updateBallIndicator(0,0,true);
+                            app.stage.removeChild(line);
+                            app.stage.removeChild(line_b);
+                            app.stage.removeChild(line_c);
+                            ClearGlows();
+                            fireok = false;
+            }
+
+
+        }
+        function GetballCollisionPoint(intersectpoint_x,intersectpoint_y,startpoint_x,startpoint_y,cursor_pos)
+        {
+            //detect balls
+            //intersect points with ball
+            let final_line_endpoint={};
+            final_line_endpoint.x = -1;
+            final_line_endpoint.y = -1;
+
+            for(let i=0;i<balls.length;i++)
+            {
+                let ball_x = balls[i].position.x;
+                let ball_y = balls[i].position.y;
+                let _div_upper = ((intersectpoint_x - startpoint_x)*(startpoint_y - ball_y) - (startpoint_x - ball_x)*(intersectpoint_y - startpoint_y));
+                let _div_lower = ((intersectpoint_x - startpoint_x)*(intersectpoint_x - startpoint_x)) + ((intersectpoint_y - startpoint_y)*(intersectpoint_y-startpoint_y));
+                let distance = _div_upper*_div_upper / _div_lower;
+
+                //console.log(distance);
+                //if line collides with ball
+                if(distance<2116)
+                {
+                    //get collision point
+                    let _l0_r1;
+                    if(cursor_pos.x>startpoint_x)
+                    {
+                        _l0_r1 =1;
+                    }
+                    else //line points to left
+                    {
+                        _l0_r1 =0;
+                    }
+                    let circle_intercept_point = getPoint(ball_x,ball_y,46,startpoint_x,startpoint_y,intersectpoint_x,intersectpoint_y,_l0_r1);
+                    if(circle_intercept_point.y>final_line_endpoint.y)
+                    {
+                        final_line_endpoint = circle_intercept_point;
+                    }
+                    
+                }
+            }
+
+            return final_line_endpoint;
+        }
+
+
+          //bullet
+        function fireBullet(e)
+        {
+            console.log("FIRE!");
+            if(fireok)
+            {
+             //   bullet = createBullet();
+            //bullets.push(bullet);
+            window.open("https://play.google.com/store/apps/details?id=com.huuuge.puzzle.popstory&hl=en&gl=US");
+            }
+           
+
+
+             
+        }
+
+        function createBullet()
+        {
+            let source;
+
+            if(type ==0)
+            {
+                source = app.loader.resources.ball_orange.texture;
+            }
+            if(type == 1)
+            {
+                source = app.loader.resources.ball_purple.texture;
+            }
+            if(type == 2)
+            {
+                source = app.loader.resources.ball_green.texture;
+            }
+
+             bullet = new PIXI.Sprite.from(source);
+            //let bullet = new PIXI.Sprite.from(app.loader.resources.bullet.texture);
+            bullet.anchor.set(0.5);
+            bullet.x = player.x;
+            bullet.y = player.y;
+            bullet.speed = bulletSpeed;
+            app.stage.addChild(bullet);
+
+            return bullet;
+        }
+
+        function updateBullets(delta)
+        {
+            if(bullet != null)
+            {
+
+            }
+            // for(let i=0;i<bullets.length;i++)
+            // {
+            //     bullets[i].position.y -= bullets[i].speed;
+
+            //     if(bullets[i].position.y < 0)
+            //     {
+            //         bullets[i].dead = true;
+            //     }
+            // }
+
+            // for(let i=0;i<bullets.length;i++)
+            // {
+            //     if(bullets[i].dead)
+            //     {
+            //         app.stage.removeChild(bullets[i])
+            //         bullets.splice(i,1);
+            //     }
+            // }
+        }
+
+        //balls   //--type: orange is 0
+        function createBall(pos_x,pos_y,type)
+        {
+            console.log("CREATE BALL");
+            let source;
+
+            if(type ==0)
+            {
+                source = app.loader.resources.ball_orange.texture;
+            }
+            if(type == 1)
+            {
+                source = app.loader.resources.ball_purple.texture;
+            }
+            if(type == 2)
+            {
+                source = app.loader.resources.ball_green.texture;
+            }
+
+            let ball = new PIXI.Sprite.from(source);
+            ball.anchor.set(0.5);
+            ball.x = pos_x;
+            ball.y = pos_y;
+            ball.type = type;
+            app.stage.addChild(ball);
+
+            balls.push(ball);
+
+            return ball;
+        }
+        function updateBallIndicator(pos_x,pos_y,noshow)
+        {
+            // ballIndicator = new PIXI.Sprite.from(app.loader.resources.ball_orange.texture);
+            // app.stage.addChild(ballIndicator);
+
+            if(ballIndicator!= null)
+            {
+                app.stage.removeChild(ballIndicator);
+            }
+            // for(let i=0;i<ballIndicator.length;i++)
+            // {
+                
+            //         app.stage.removeChild(ballIndicator[i])
+            //         ballIndicator.splice(i,1);
+                
+            // }
+            if(!noshow)
+            {
+                let source;
+
+            
+                source = app.loader.resources.ball_indicator.texture;
+            
+
+             ballIndicator = new PIXI.Sprite.from(source);
+            ballIndicator.anchor.set(0.5);
+            ballIndicator.x = pos_x;
+            ballIndicator.y = pos_y;
+            //ballIndicator.type = type;
+            //balls.push(ball);
+            app.stage.addChild(ballIndicator);
+            }
+            
+        }
+        //glows
+        function checkBallGlows(final_line_endpoint)
+        {
+            let ball_aimed_type = -1;
+            for(let i=0;i<balls.length;i++)
+            {
+                if((balls[i].x -final_line_endpoint.x)<=46&&(balls[i].x -final_line_endpoint.x)>=-46&&(balls[i].y -final_line_endpoint.y)<=46&&(balls[i].y -final_line_endpoint.y)>=-46)
+                {
+                    ball_aimed_type = balls[i].type;
+
+                }
+            }
+            //caution: to make a full game, the checking of type cannot be used as sole condition of the glowing and matching, balls should be connected.
+            for(let i=0;i<balls.length;i++)
+            {
+                if(balls[i].type == ball_aimed_type)
+                {
+                    createGlow(balls[i].x,balls[i].y);
+                }
+            }
+
+            //set fire type
+            firetype = ball_aimed_type;
+
+        }
+        function createGlow(pos_x,pos_y)
+        {
+            console.log("CREATE GLOW");
+            let source;
+            source = app.loader.resources.ball_indicator.texture;
+            
+
+            let ballglow = new PIXI.Sprite.from(source);
+            ballglow.anchor.set(0.5);
+            ballglow.x = pos_x;
+            ballglow.y = pos_y;
+            
+            app.stage.addChild(ballglow);
+
+            ballglows.push(ballglow);
+
+            //return ball;
+        }
+        function ClearGlows()
+        {
+            for(let i=0;i<ballglows.length;i++)
+            {
+                
+                
+                    app.stage.removeChild(ballglows[i]);
+                    
+                
+            }   
+            ballglows.splice(0,ballglows.length-1);      
+        }
+
+        //Utility
+
+        //Get Circle's intersection point p with line
+        /*
+        cx:circle_center_x
+        cy:circle_center_y
+        r:ridus
+        stx:line start point x
+        sty:line start point y
+        edx:line end point x
+        edy:line end point y
+        l0_r1: if line pointing left, =0,  if right, =1
+
+        return:p(x,y)
+        */
+        function  getPoint(cx,cy,r,stx,sty,edx,edy,l0_r1) {
+        // line
+        var k = (edy - sty) / (edx - stx);
+        var b = edy - k*edx;
+        //formula
+        var x1,y1,x2,y2;
+        var c = cx*cx + (b - cy)*(b- cy) -r*r;
+        var a = (1 + k*k);
+        var b1 = (2*cx - 2*k*(b - cy));
+
+        var  tmp = Math.sqrt(b1*b1 - 4*a*c);
+        x1 = ( b1 + tmp )/(2*a);
+        y1 = k*x1 + b;
+        x2 = ( b1 - tmp)/(2*a);
+        y2 = k*x2 + b;
+        //if the point is on the circle or not
+        //var res = (x1 -cx)*(x1 -cx) + (y1 - cy)*(y1 -cy);
+        var  p = {};
+        //  if( res == r*r)
+        //  {
+            if(l0_r1==0)
+            {
+                p.x = x1;
+                p.y = y1;
+            }
+            if(l0_r1 ==1)
+            {
+                p.x = x2;
+                p.y = y2;
+            }
+
+        
+    //    }    else
+    //    {
+    //     p.x = x2;
+    //     p.y = y2;
+    //     }
+        return p;
+        }
+
+
+
+    </script>
+</head>
+<body>
+    <div id = "keys"></div>
+    <div id="gameDiv"></div>
+</body>
+</html>
